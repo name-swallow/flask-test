@@ -1,3 +1,4 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -68,6 +69,14 @@
         th {
             background-color: #f2f2f2;
         }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 
@@ -75,6 +84,7 @@
     <h1>管理员页面</h1>
     <button onclick="window.location.href='/logout'">退出登录</button>
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label for="user_id">输入用户 ID 查询:</label>
         <input type="text" id="user_id" name="user_id">
         <input type="submit" value="查询">
@@ -85,6 +95,7 @@
                 <th>ID</th>
                 <th>用户名</th>
                 <th>密码</th>
+                <th>操作</th>
             </tr>
         </thead>
         <tbody>
@@ -94,11 +105,17 @@
                 <td>{{ user[0] }}</td>
                 <td>{{ user[1] }}</td>
                 <td>{{ user[2] }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('delete_user', user_id=user[0]) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
             {% else %}
             <tr>
-                <td colspan="3">未找到匹配的用户记录。</td>
+                <td colspan="4">未找到匹配的用户记录。</td>
             </tr>
             {% endif %}
         </tbody>
@@ -106,4 +123,3 @@
 </body>
 
 </html>
-    
