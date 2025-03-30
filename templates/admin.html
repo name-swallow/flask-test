@@ -1,85 +1,42 @@
-<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>管理员页面</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        button {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        form {
-            margin-top: 20px;
-        }
-
-        input[type=text] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        input[type=submit] {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        input[type=submit]:hover {
-            background-color: #0056b3;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        .delete-btn {
-            background-color: #dc3545;
-        }
-
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        h1 { color: #333; }
+        button { background-color: #007BFF; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        form { margin-top: 20px; }
+        input[type=text] { padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px; }
+        input[type=submit] { background-color: #007BFF; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        input[type=submit]:hover { background-color: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { background-color: #dc3545; }
+        .delete-btn:hover { background-color: #c82333; }
+        .edit-form { display: none; background-color: #fff; padding: 10px; border: 1px solid #ccc; position: absolute; }
+        .status-btn-enable { background-color: #28a745; }
+        .status-btn-disable { background-color: #ffc107; }
+        .status-btn-enable:hover { background-color: #218838; }
+        .status-btn-disable:hover { background-color: #e0a800; }
     </style>
+    <script>
+        function showEditForm(userId, username) {
+            var form = document.getElementById('edit-form-' + userId);
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('edit-username-' + userId).value = username;
+        }
+        function toggleAll(source) {
+            checkboxes = document.getElementsByName('user_ids');
+            for(var i=0; i<checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+    </script>
 </head>
-
 <body>
     <h1>管理员页面</h1>
     <button onclick="window.location.href='/logout'">退出登录</button>
@@ -89,37 +46,60 @@
         <input type="text" id="user_id" name="user_id">
         <input type="submit" value="查询">
     </form>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>用户名</th>
-                <th>密码</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if users %}
-            {% for user in users %}
-            <tr>
-                <td>{{ user[0] }}</td>
-                <td>{{ user[1] }}</td>
-                <td>{{ user[2] }}</td>
-                <td>
-                    <form method="post" action="{{ url_for('delete_user', user_id=user[0]) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-            {% else %}
-            <tr>
-                <td colspan="4">未找到匹配的用户记录。</td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
+    <form method="post" action="{{ url_for('batch_delete') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="submit" value="批量删除" style="background-color: #dc3545;">
+        <input type="submit" formaction="{{ url_for('batch_disable') }}" value="批量禁用" style="background-color: #ffc107;">
+        <table border="1">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" onclick="toggleAll(this)"></th>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>密码</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if users %}
+                {% for user in users %}
+                <tr>
+                    <td><input type="checkbox" name="user_ids" value="{{ user[0] }}"></td>
+                    <td>{{ user[0] }}</td>
+                    <td>{{ user[1] }}</td>
+                    <td>{{ user[2] }}</td>
+                    <td>{{ '启用' if user[3] == 1 else '禁用' }}</td>
+                    <td>
+                        <button onclick="showEditForm({{ user[0] }}, '{{ user[1] }}'); return false;">编辑</button>
+                        <form method="post" action="{{ url_for('delete_user', user_id=user[0]) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</button>
+                        </form>
+                        <form method="post" action="{{ url_for('toggle_status', user_id=user[0]) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="{{ 'status-btn-enable' if user[3] == 1 else 'status-btn-disable' }}">
+                                {{ '禁用' if user[3] == 1 else '启用' }}
+                            </button>
+                        </form>
+                        <div id="edit-form-{{ user[0] }}" class="edit-form">
+                            <form method="post" action="{{ url_for('edit_user', user_id=user[0]) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <label>用户名: <input type="text" id="edit-username-{{ user[0] }}" name="username"></label><br>
+                                <label>新密码: <input type="text" name="password" placeholder="留空则不修改"></label><br>
+                                <input type="submit" value="保存">
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6">未找到匹配的用户记录。</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </form>
 </body>
-
 </html>
