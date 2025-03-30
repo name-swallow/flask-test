@@ -1,85 +1,110 @@
-<!-- adminlogin.html -->
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>管理员登录</title>
+    <title>管理员页面</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background-color: white;
             padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
         }
 
-        input[type=text],
-        input[type=password] {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: inline-block;
+        h1 {
+            color: #333;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        input[type=text] {
+            padding: 10px;
             border: 1px solid #ccc;
-            box-sizing: border-box;
+            border-radius: 5px;
+            margin-right: 10px;
         }
 
         input[type=submit] {
             background-color: #007BFF;
             color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
+            padding: 10px 20px;
             border: none;
-            cursor: pointer;
-            width: 100%;
             border-radius: 5px;
+            cursor: pointer;
         }
 
         input[type=submit]:hover {
             background-color: #0056b3;
         }
 
-        p {
-            color: red;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        {% if error %}
-        <p>{{ error }}</p>
-        {% endif %}
-        <h2>管理员登录</h2>
-        <form method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label for="username">用户名:</label>
-            <input type="text" id="username" name="username" required><br>
-            <label for="password">密码:</label>
-            <input type="password" id="password" name="password" required><br>
-            <label for="captcha">验证码:</label>
-            <img src="{{ url_for('generate_captcha') }}" id="captcha-img" onclick="refreshCaptcha()">
-            <input type="text" id="captcha" name="captcha" required><br>
-            <input type="submit" value="登录">
-        </form>
-    </div>
-
-    <script>
-        function refreshCaptcha() {
-            const captchaImg = document.getElementById('captcha-img');
-            captchaImg.src = "{{ url_for('generate_captcha') }}?t=" + new Date().getTime();
-        }
-    </script>
+    <h1>管理员页面</h1>
+    <button onclick="window.location.href='/logout'">退出登录</button>
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <!-- 添加 CSRF 令牌 -->
+        <label for="user_id">输入用户 ID 查询:</label>
+        <input type="text" id="user_id" name="user_id">
+        <input type="submit" value="查询">
+    </form>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>密码</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if users %}
+            {% for user in users %}
+            <tr>
+                <td>{{ user[0] }}</td>
+                <td>{{ user[1] }}</td>
+                <td>{{ user[2] }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="3">未找到匹配的用户记录。</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
 </body>
 
 </html>
