@@ -1,0 +1,257 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e9f5ff, #c3d7e8);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .tab-menu {
+            display: flex;
+            justify-content: space-around;
+            list-style: none;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: #5f6368;
+            cursor: pointer;
+            padding: 0.8rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #1a73e8;
+            border-bottom: 3px solid #1a73e8;
+        }
+
+        .tab-button:hover {
+            color: #1a73e8;
+        }
+
+        .form-section {
+            padding: 2rem;
+        }
+
+        .form-row {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #3c4043;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #dfe1e5;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+        }
+
+        .captcha-row {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .captcha-img {
+            width: 150px;
+            height: 50px;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: #1557b0;
+        }
+
+        .message {
+            text-align: center;
+            margin: 1rem 0;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        @media (max-width: 480px) {
+            .auth-box {
+                border-radius: 0;
+            }
+
+            .tab-menu {
+                padding: 1rem;
+            }
+
+            .form-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-box">
+        <ul class="tab-menu">
+            <li><button class="tab-button active" onclick="switchTab(event, 'loginTab')" id="defaultOpen">登录</button></li>
+            <li><button class="tab-button" onclick="switchTab(event, 'registerTab')">注册</button></li>
+        </ul>
+
+        <div class="form-section">
+            <div id="loginTab" class="tabcontent">
+                <h2 class="form-title">用户登录</h2>
+                {% if error %}
+                <p class="message error">{{ error }}</p>
+                {% endif %}
+                {% if message %}
+                <p class="message success">{{ message }}</p>
+                {% endif %}
+                <form method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <label class="form-label" for="username">用户名</label>
+                        <input type="text" id="username" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="password">密码</label>
+                        <input type="password" id="password" name="password" class="form-input" required>
+                    </div>
+                    <div class="form-row captcha-row">
+                        <div class="captcha-img" onclick="refreshCaptcha()">
+                            <img id="captcha-img" src="{{ url_for('generate_captcha') }}" alt="验证码">
+                        </div>
+                        <input type="text" name="captcha" placeholder="输入验证码" class="form-input" required>
+                    </div>
+                    <button type="submit" class="submit-btn">立即登录</button>
+                </form>
+            </div>
+
+            <div id="registerTab" class="tabcontent" style="display: none;">
+                <h2 class="form-title">用户注册</h2>
+                {% if error %}
+                <p class="message error">{{ error }}</p>
+                {% endif %}
+                {% if message %}
+                <p class="message success">{{ message }}</p>
+                {% endif %}
+                <form method="post" action="/register">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <label class="form-label" for="reg-username">用户名</label>
+                        <input type="text" id="reg-username" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="reg-password">密码</label>
+                        <input type="password" id="reg-password" name="password" class="form-input" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="confirm-password">确认密码</label>
+                        <input type="password" id="confirm-password" name="confirm_password" class="form-input" required>
+                    </div>
+                    <button type="submit" class="submit-btn">立即注册</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(event, tabId) {
+            const tabs = document.getElementsByClassName('tabcontent');
+            for (let tab of tabs) {
+                tab.style.display = 'none';
+            }
+
+            const buttons = document.getElementsByClassName('tab-button');
+            for (let button of buttons) {
+                button.classList.remove('active');
+            }
+
+            document.getElementById(tabId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function refreshCaptcha() {
+            const captchaImg = document.getElementById('captcha-img');
+            captchaImg.src = "{{ url_for('generate_captcha') }}?t=" + new Date().getTime();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('defaultOpen').click();
+        });
+    </script>
+</body>
+
+</html>
