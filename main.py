@@ -32,9 +32,10 @@ admin_logger.addHandler(admin_handler)
 app = Flask(__name__, template_folder='templates')
 app.permanent_session_lifetime = timedelta(hours=2)
 app.secret_key = 'Your secret key'
-db = pymysql.connect(host="localhost", user='your_username', password='your_password', database='database_name')
+db = pymysql.connect(host="localhost", user='root', password='root', database='flask_test')
 csrf = CSRFProtect(app)
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["20 per minute", "100 per hour"])
+
 
 # 生成验证码
 @app.route('/generate_captcha')
@@ -46,12 +47,14 @@ def generate_captcha():
     session['captcha_text'] = captcha_text
     return send_file(data, mimetype='image/png')
 
+
 @app.route("/")
 def index():
     if 'username' not in session:
         return redirect("/login")
     else:
         return render_template('index.html')
+
 
 @app.route("/login", methods=['GET', 'POST'])
 @limiter.limit("15 per minute")
@@ -62,16 +65,16 @@ def login():
         password = request.form.get('password')
         captcha = request.form.get('captcha')
         session_captcha = session.get('captcha_text')
-        
+
         # 验证验证码
         if not captcha or not session_captcha or captcha != session_captcha:
             return render_template('login.html', error='验证码错误')
-        
+
         # 验证用户
         cursor = db.cursor()
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
-        
+
         if user:
             passwd = hashlib.md5(password.encode('utf-8')).hexdigest()
             if passwd == user[2]:
@@ -80,11 +83,12 @@ def login():
                 # 清除验证码
                 session.pop('captcha_text', None)
                 return redirect("/")
-        
+
         user_logger.warning(f'用户 {username} 尝试登录失败')
         return render_template('login.html', error='用户名或密码错误')
-    
+
     return render_template('login.html')
+
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -113,6 +117,7 @@ def register():
             return render_template('login.html', error=f'注册失败: {str(e)}')
     return redirect(url_for('login'))
 
+
 @app.route("/logout")
 def logout():
     if 'username' in session:
@@ -126,6 +131,7 @@ def logout():
     # 退出登录时，清除验证码
     session.pop('captcha_text', None)
     return redirect("/login")
+
 
 @app.route("/adminlogin", methods=['GET', 'POST'])
 @limiter.limit("15 per minute")
@@ -154,6 +160,7 @@ def adminlogin():
             return render_template('adminlogin.html', error='登陆失败')
     return render_template('adminlogin.html')
 
+
 @app.route("/admin", methods=['GET', 'POST'])
 def admin():
     if 'admin' not in session:
@@ -167,6 +174,22 @@ def admin():
         cursor.execute("SELECT * FROM users")
         users = cursor.fetchall()
     return render_template('admin.html', users=users)
+
+
+@app.route("/delete_user/<int:user_id>", methods=['POST'])
+def delete_user(user_id):
+    if 'admin' not in session:
+        return redirect("/adminlogin")
+    try:
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
+        db.commit()
+        admin_logger.info(f"管理员删除了用户 ID 为 {user_id} 的用户信息")
+    except Exception as e:
+        db.rollback()
+        admin_logger.error(f"删除用户 ID 为 {user_id} 的用户信息时出错: {str(e)}")
+    return redirect("/admin")
+
 
 def validate_password(password):
     if len(password) < 8:
@@ -183,6 +206,7 @@ def validate_password(password):
         return False
     else:
         return True
+
 
 if __name__ == '__main__':
     app.run(debug=True)
