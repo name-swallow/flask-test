@@ -29,15 +29,9 @@ admin_handler.setFormatter(user_formatter)
 admin_logger.addHandler(admin_handler)
 
 app = Flask(__name__, template_folder='templates')
-
 app.permanent_session_lifetime = timedelta(hours=2)
-app.secret_key = 'Set a high - strength secret key' 
-db = pymysql.connect(
-    host="localhost",
-    user='Your database username',
-    password='Your database password',
-    database='database_name'
-)
+app.secret_key = 'Your secret key'
+db = pymysql.connect(host="localhost", user='root', password='root', database='flask_test')
 csrf = CSRFProtect(app)
 limiter = Limiter(app=app, key_func=get_remote_address)  # 移除 default_limits
 
@@ -110,7 +104,8 @@ def register():
         try:
             cursor.execute("INSERT INTO users (username, password, is_active) VALUES (%s, %s, %s)", (username, passwd, 1))
             db.commit()
-            return render_template('login.html', message='注册成功，请登录')
+            session.pop('captcha_text', None)  # 清除 session 中的验证码，确保登录时刷新
+            return redirect(url_for('login', message='注册成功，请登录'))  # 使用 redirect 跳转到 /login
         except Exception as e:
             db.rollback()
             return render_template('login.html', error=f'注册失败: {str(e)}')
