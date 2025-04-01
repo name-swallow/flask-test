@@ -31,7 +31,7 @@ admin_logger.addHandler(admin_handler)
 app = Flask(__name__, template_folder='templates')
 app.permanent_session_lifetime = timedelta(hours=2)
 app.secret_key = 'Your secret key'
-db = pymysql.connect(host="localhost", user='root', password='root', database='flask_test')
+db = pymysql.connect(host="localhost", user='root', password='root', database='database_name')
 csrf = CSRFProtect(app)
 limiter = Limiter(app=app, key_func=get_remote_address)  # 移除 default_limits
 
